@@ -2,7 +2,7 @@
 
 *How can an AI agent discover independent providers, retrieve data from their own sources, and verify an offer — without requiring every provider to be individually integrated into the platform?*
 
-**Authors:** Viljem Dvojmoč (CM / AI Docking Port) · Rouiada Abbas (HemmaBo / Vacation Rental Protocol)
+**Authors:** Viljem Dvojmoč (CM / AI Docking Port) · Rouiada Abbas (Vacation Rental Protocol; operator of HemmaBo, its reference implementation)
 
 ---
 
@@ -21,7 +21,7 @@ We are not claiming existing platforms cannot do this at all. We want to demonst
 
 A user asks an AI agent:
 
-> *"Find accommodation for 13–14 February 2027, two guests, direct booking, no third-party platform fees."*
+> *"Find accommodation for 13–14 February 2027, two guests, booked directly with the host."*
 
 Proposed workflow:
 
@@ -40,10 +40,12 @@ This is a demonstration scenario. Steps 2–3 are independently live today on re
 |---|---|---|
 | Starting point | A provider runs its own local booking system and wants to stay independent of centralized platforms. | An AI agent needs structured access to a provider's offer and a way to verify it. |
 | Main question | How does an agent discover an independent provider and find the right data source? | How does an agent verify a signed offer, and distinguish that from checking live availability or completing a booking? |
-| Live today | Reception Protocol node on real production (`apartmamatevz.si`): `.well-known/cm-ai-docking-port.json` + `manifest.json` discovery, stateless depth/fanout-bounded forwarding between nodes, geographic relevance gating, documented request/response envelopes and error codes, rate limiting. A JSON-RPC/A2A translator (`a2a_rpc.php`) with a signed AgentCard (Ed25519, detached JWS) and signed per-result responses. A second, non-production demo node for multi-node testing. | Open spec (CC0) with a reference implementation (HemmaBo); `villaakerlyckan.se` is a node running it. `apartmamatevz.si` is now an independent second signing node — discovery doc, JWKS, and signed stay offers independently re-verified by both the spec author's own tooling and a third-party open-source verifier. |
-| Not yet connected | The Docking Port's discovery/routing layer does not itself verify offer authenticity — it points *at* a source, it does not vouch for the data. | VRP verifies that a *signature* is valid; it does not by itself solve how an agent finds a provider it has never seen before. |
+| Live today | Reception Protocol node on real production (`apartmamatevz.si`): `.well-known/cm-ai-docking-port.json` + `manifest.json` discovery, stateless depth/fanout-bounded forwarding between nodes, geographic relevance gating, documented request/response envelopes and error codes, rate limiting. A JSON-RPC/A2A translator (`a2a_rpc.php`) with a signed AgentCard (Ed25519, detached JWS) and signed per-result responses. A second, non-production demo node for multi-node testing. | Open spec (CC0) with a reference implementation (HemmaBo); `villaakerlyckan.se` is a node running it. `apartmamatevz.si` is now an independent second signing node — discovery doc, JWKS, and signed stay offers independently re-verified by both the spec author's own tooling and a third-party open-source verifier ([Swarnabha753/vrp-independent-verifier](https://github.com/Swarnabha753/vrp-independent-verifier)). |
+| Not yet connected | The Docking Port's discovery/routing layer does not itself verify offer authenticity — it points *at* a source, it does not vouch for the data. | VRP verifies that an offer is signed by the host's own domain, is current, and matches the stay asked for; it does not by itself solve how an agent finds a provider it has never seen before. |
 
 Neither side needs the other to function on its own. The two pieces answer two different, adjacent parts of the same larger question, and can be adopted independently or together.
+
+VRP also has a proposed experimental extension, **peers**, in which a node lists the domains of other VRP nodes it knows and the client walks them itself; AI Docking Port forwards requests between nodes on the agent's behalf. Different mechanisms, compatible.
 
 ## 4. What We Propose Testing
 
@@ -66,4 +68,11 @@ Everything needed to reproduce this is already public: both nodes' discovery doc
 
 Our goal right now is to validate the problem and the proposed approach with people who actually build this infrastructure, before making any broader claim. If it's relevant to your work, we're happy to share full technical documentation and run a live demonstration against our real nodes.
 
-— Viljem Dvojmoč (CM AI Docking Port) & Rouiada Abbas (Vacation Rental Protocol)
+## Links
+
+- VRP spec: https://vacationrentalprotocol.com/spec/v0.1
+- Verify apartmamatevz.si as a VRP node: https://vacationrentalprotocol.com/verify?host=apartmamatevz.si
+- AI Docking Port manifest: https://apartmamatevz.si/.well-known/cm-ai-docking-port.json
+- AI Docking Port spec: https://ai-cmfree.duckdns.org/app/public/ai/spec.html
+
+— Viljem Dvojmoč (CM AI Docking Port) & Rouiada Abbas (Vacation Rental Protocol; operator of HemmaBo, its reference implementation)
