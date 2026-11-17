@@ -16,6 +16,7 @@ We are not claiming existing platforms cannot do this at all. We want to demonst
 - **Verification** — once an agent does find an offer, it has no general way to confirm it actually came from the provider, is still current, and wasn't altered in transit by an intermediary.
 - **Authorization boundary** — finding a verifiable offer is not the same as being allowed to act on it; an agent needs to know what it can safely do next (read, check availability, book).
 - **Entry-point ordering** — publishing both a machine-readable manifest and ordinary prose documentation does not by itself establish which an agent will consult first. Whether explicit manifest-first guidance improves discovery, interaction count, token cost or error rate is a testable hypothesis. Prose carries descriptive information for humans and agents alike; only the signed offer carries verifiable price and availability, so prose cannot substitute for successful offer verification when presenting a price or availability as VRP-verified.
+- **No shared surface substitutes for origin.** If a single query reaches more than one provider through forwarding between nodes, the node that did the forwarding must never hand back a usable or citable answer on another node's behalf — only a pointer to that node's own domain. Verification and action always happen at the domain that signed the offer, never at whichever node the query happened to pass through. Without this rule, the forwarding layer itself becomes the place an agent learns to ask first — exactly the kind of intermediary this proposal is trying to remove, not recreate one layer up.
 
 ## 2. A Real-World Example
 
@@ -26,8 +27,8 @@ A user asks an AI agent:
 Proposed workflow:
 
 1. The agent identifies independent accommodation providers that might match.
-2. It discovers a source describing each provider's capabilities (**AI Docking Port**).
-3. It retrieves a signed offer and verifies its signature (**VRP**).
+2. It discovers a source describing each provider's capabilities (**AI Docking Port**) — if that discovery crosses more than one node, each forwarding node returns only a pointer to the matching provider's own domain, never a usable answer on that provider's behalf.
+3. It retrieves a signed offer directly from that provider's own domain and verifies its signature (**VRP**).
 4. It checks current availability and pricing directly with the provider.
 5. It presents the result and a direct booking link to the user.
 6. The booking is completed through a system that actually supports that action.
@@ -41,7 +42,7 @@ This is a demonstration scenario. Steps 2–3 are independently live today on re
 | Starting point | A provider runs its own local booking system and wants to stay independent of centralized platforms. | An AI agent needs structured access to a provider's offer and a way to verify it. |
 | Main question | How does an agent discover an independent provider and find the right data source? | How does an agent verify a signed offer, and distinguish that from checking live availability or completing a booking? |
 | Live today | Reception Protocol node on real production (`apartmamatevz.si`): `.well-known/cm-ai-docking-port.json` + `manifest.json` discovery, stateless depth/fanout-bounded forwarding between nodes, geographic relevance gating, documented request/response envelopes and error codes, rate limiting. A JSON-RPC/A2A translator (`a2a_rpc.php`) with a signed AgentCard (Ed25519, detached JWS) and signed per-result responses. A second, non-production demo node for multi-node testing. | Open spec (CC0) with a reference implementation (HemmaBo); `villaakerlyckan.se` is a node running it. `apartmamatevz.si` is now an independent second signing node — its signed stay offers verify against its JWKS with both the spec's own tooling (vrp-verify 0.3.1) and a third-party open-source verifier ([Swarnabha753/vrp-independent-verifier](https://github.com/Swarnabha753/vrp-independent-verifier)), run by Rouiada Abbas on 2026-11-14. |
-| Not yet connected | The Docking Port's discovery/routing layer does not itself verify offer authenticity — it points *at* a source, it does not vouch for the data. | VRP verifies that an offer is signed by the host's own domain, is current, and matches the stay asked for; it does not by itself solve how an agent finds a provider it has never seen before. |
+| Not yet connected | The Docking Port's discovery/routing layer does not itself verify offer authenticity. This is an explicit architectural rule, not just a description: beyond the node directly queried, forwarding never returns a usable or citable answer on another node's behalf — only a pointer to that node's own domain. Any signed offer, price, or booking action is always retrieved directly from the origin that signed it, never from the node that forwarded the query. This rule is agreed between both authors and is being implemented in the live node before the proposed test below runs. | VRP verifies that an offer is signed by the host's own domain, is current, and matches the stay asked for; it does not by itself solve how an agent finds a provider it has never seen before. |
 
 Neither side needs the other to function on its own. The two pieces answer two different, adjacent parts of the same larger question, and can be adopted independently or together.
 
@@ -56,6 +57,7 @@ A small, bounded, reproducible experiment — not a request to adopt a platform:
 - One discovery mechanism (AI Docking Port manifest + Reception forwarding).
 - One offer-verification mechanism (VRP signed offer + JWKS).
 - One end-to-end, reproducible trace: agent → discovers provider → retrieves signed offer → verifies it → checks live availability → gets a direct booking link.
+- Confirmation that a forwarded discovery result never carries a citable or actionable answer - only a pointer back to the origin domain where the agent must retrieve and verify the actual offer.
 - Whether signaling "consult the machine-readable entry point first; prose carries descriptive information, the signed offer carries the verifiable facts" measurably reduces interaction count, token cost and error rate compared to no such signal.
 
 Everything needed to reproduce this is already public: both nodes' discovery documents, both specs, and working code.
